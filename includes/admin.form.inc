@@ -45,6 +45,8 @@ function islandora_repository_admin(array $form, array &$form_state) {
     $confirmation_message = '<img src="' . url('misc/watchdog-ok.png') . '"/>'
         . t('Successfully connected to Fedora Server (Version !version). with !objects objects and a size of !size_of', array('!version' => $info['repositoryVersion']
           , '!objects' => $info['numberOfObjects'], '!size_of' => $info['repositorySize']));
+    // register namespace
+//    $response = $connection->api->m->registerNamespace("islandora", "http://islandora.ca");
   }
   else {
     $confirmation_message = theme_image(array('path' => 'misc/watchdog-error.png', 'attributes' => array()));
@@ -119,6 +121,13 @@ function islandora_repository_admin(array $form, array &$form_state) {
     ),
   );
 
+  $ns_json = $connection->api->m->getRegisteredNamespaces();
+  $namespaces = parseNamespace($ns_json);
+  $form['islandora_tabs']['islandora_namespace']['nslist'] = array(
+    '#title' => 'Registered Namespaces',
+    '#markup' => $namespaces,
+  );
+
   if (isset($form_state['values']['islandora_namespace_restriction_enforced'])) {
     $namespaces = $form_state['values']['islandora_namespace_restriction_enforced'];
   }
@@ -167,4 +176,21 @@ function islandora_update_url_div(array $form, array $form_state) {
  */
 function islandora_update_namespace_div(array $form, array $form_state) {
   return $form['islandora_tabs']['islandora_namespace']['wrapper'];
+}
+
+/**
+ * Format the namespace list given into displayable text.  Currently we just
+ * wrap the keys/values into a table and return the markup.
+ */
+function parseNamespace($ns_json) {
+  $nsmap = json_decode($ns_json)->namespaceRegistry->namespace;
+  $map = "<table>";
+  $key = "@prefix";
+  $value = "@URI";
+  foreach ($nsmap as $kv) {
+    if ($kv->$key !== "") {
+    $map = $map . "<tr><td>" . $kv->$key . "</td><td>" . $kv->$value . "</td></tr>";
+    }
+  }
+  return $map . "</table>";
 }
