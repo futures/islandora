@@ -74,7 +74,6 @@ function islandora_invoke_datastream_hooks($hook, array $models, $dsid) {
 }
 
 class IslandoraFedoraRepository extends FedoraRepository {
-
   protected $queryClass = 'IslandoraRepositoryQuery';
   protected $newObjectClass = 'IslandoraNewFedoraObject';
   protected $objectClass = 'IslandoraFedoraObject';
@@ -110,7 +109,6 @@ class IslandoraFedoraRepository extends FedoraRepository {
       throw $e;
     }
   }
-
 }
 
 class IslandoraRepositoryQuery extends RepositoryQuery {
@@ -118,15 +116,12 @@ class IslandoraRepositoryQuery extends RepositoryQuery {
 }
 
 class IslandoraNewFedoraObject extends NewFedoraObject {
-
   protected $newFedoraDatastreamClass = 'IslandoraNewFedoraDatastream';
   protected $fedoraDatastreamClass = 'IslandoraFedoraDatastream';
   protected $fedoraRelsExtClass = 'IslandoraFedoraRelsExt';
-
 }
 
 class IslandoraFedoraObject extends FedoraObject {
-
   protected $newFedoraDatastreamClass = 'IslandoraNewFedoraDatastream';
   protected $fedoraDatastreamClass = 'IslandoraFedoraDatastream';
   protected $fedoraRelsExtClass = 'IslandoraFedoraRelsExt';
@@ -159,7 +154,6 @@ class IslandoraFedoraObject extends FedoraObject {
       throw $e;
     }
   }
-
 }
 
 class IslandoraRepositoryConnection extends RepositoryConnection {
@@ -181,7 +175,6 @@ class IslandoraFedoraApi extends FedoraApi {
     $this->m = new IslandoraFedoraApiM($connection, $serializer);
     $this->connection = $connection;
   }
-
 }
 
 class IslandoraFedoraApiM extends FedoraApiM {
@@ -348,24 +341,18 @@ class IslandoraSimpleCache extends SimpleCache {
 }
 
 class IslandoraNewFedoraDatastream extends NewFedoraDatastream {
-
   protected $fedoraRelsIntClass = 'IslandoraFedoraRelsInt';
   protected $fedoraDatastreamVersionClass = 'IslandoraFedoraDatastreamVersion';
-
 }
 
 class IslandoraFedoraDatastream extends FedoraDatastream {
-
   protected $fedoraRelsIntClass = 'IslandoraFedoraRelsInt';
   protected $fedoraDatastreamVersionClass = 'IslandoraFedoraDatastreamVersion';
-
 }
 
 class IslandoraFedoraDatastreamVersion extends FedoraDatastreamVersion {
-
   protected $fedoraRelsIntClass = 'IslandoraFedoraRelsInt';
   protected $fedoraDatastreamVersionClass = 'IslandoraFedoraDatastreamVersion';
-
 }
 
 class IslandoraFedoraRelsExt extends FedoraRelsExt {
