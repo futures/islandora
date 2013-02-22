@@ -45,6 +45,22 @@ function islandora_repository_admin(array $form, array &$form_state) {
     $confirmation_message = '<img src="' . url('misc/watchdog-ok.png') . '"/>'
         . t('Successfully connected to Fedora Server (Version !version). with !objects objects and a size of !size_of', array('!version' => $info['repositoryVersion']
           , '!objects' => $info['numberOfObjects'], '!size_of' => $info['repositorySize']));
+
+    // attempt to register the default namespace
+    try {
+      $response = $connection->api->m->registerNamespace("islandora", "http://islandora.ca");
+      if ($response && $response['status'] == 201) {
+        $msg = t("Successfully registered default islandora namespace");
+      }
+      else {
+        $msg = t("Encountered error @error ocurred during default namespace registration", array("@error" => 
+        $response['status']));
+      }
+    }
+    catch (RepositoryException $e) {
+      $msg = t("Failed to register default islandora namespace");
+    }
+    $confirmation_message .= "<br/>" . $msg;
   }
   else {
     $confirmation_message = theme_image(array('path' => 'misc/watchdog-error.png', 'attributes' => array()));
@@ -181,7 +197,13 @@ function islandora_update_namespace_div(array $form, array $form_state) {
  * wrap the keys/values into a table and return the markup.
  */
 function parseNamespace($ns_json) {
-  $nsmap = json_decode($ns_json)->namespaceRegistry->namespace;
+  $nsmap = json_decode($ns_json);
+  if ($nsmap !== NULL) {
+    $nsmap = $nsmap->namespaceRegistry->namespace;
+  }
+  else {
+    return "Error parsing namespace list";
+  }
   $map = "<table>";
   $key = "@prefix";
   $value = "@URI";
