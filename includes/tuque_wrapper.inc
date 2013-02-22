@@ -7,8 +7,18 @@
  *
  * @todo Overload functions and apply pre/post hooks.
  */
-
 $islandora_module_path = drupal_get_path('module', 'islandora');
+
+
+@include_once "$islandora_module_path/libraries/tuque/Datastream.php";
+@include_once "$islandora_module_path/libraries/tuque/FedoraApi.php";
+@include_once "$islandora_module_path/libraries/tuque/FedoraApiSerializer.php";
+@include_once "$islandora_module_path/libraries/tuque/Object.php";
+@include_once "$islandora_module_path/libraries/tuque/RepositoryConnection.php";
+@include_once "$islandora_module_path/libraries/tuque/Cache.php";
+@include_once "$islandora_module_path/libraries/tuque/RepositoryException.php";
+@include_once "$islandora_module_path/libraries/tuque/Repository.php";
+@include_once "$islandora_module_path/libraries/tuque/FedoraRelationships.php";
 
 // @todo this until we expost these in a module or library
 @include_once 'sites/all/libraries/tuque/Datastream.php';
@@ -20,16 +30,6 @@ $islandora_module_path = drupal_get_path('module', 'islandora');
 @include_once 'sites/all/libraries/tuque/RepositoryException.php';
 @include_once 'sites/all/libraries/tuque/Repository.php';
 @include_once 'sites/all/libraries/tuque/FedoraRelationships.php';
-
-@include_once "$islandora_module_path/libraries/tuque/Datastream.php";
-@include_once "$islandora_module_path/libraries/tuque/FedoraApi.php";
-@include_once "$islandora_module_path/libraries/tuque/FedoraApiSerializer.php";
-@include_once "$islandora_module_path/libraries/tuque/Object.php";
-@include_once "$islandora_module_path/libraries/tuque/RepositoryConnection.php";
-@include_once "$islandora_module_path/libraries/tuque/Cache.php";
-@include_once "$islandora_module_path/libraries/tuque/RepositoryException.php";
-@include_once "$islandora_module_path/libraries/tuque/Repository.php";
-@include_once "$islandora_module_path/libraries/tuque/FedoraRelationships.php";
 
 /**
  * Allow modules to alter an object before a mutable event occurs.
@@ -74,6 +74,7 @@ function islandora_invoke_datastream_hooks($hook, array $models, $dsid) {
 }
 
 class IslandoraFedoraRepository extends FedoraRepository {
+
   protected $queryClass = 'IslandoraRepositoryQuery';
   protected $newObjectClass = 'IslandoraNewFedoraObject';
   protected $objectClass = 'IslandoraFedoraObject';
@@ -101,26 +102,31 @@ class IslandoraFedoraRepository extends FedoraRepository {
         islandora_invoke_datastream_hooks(ISLANDORA_DATASTREAM_INGESTED_HOOK, $object->models, $dsid, $object, $datastream);
       }
       return $ret;
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
       watchdog('islandora', 'Failed to ingest object: @pid</br>code: @code<br/>message: @msg', array(
-          '@pid' => $object->id,
-          '@code' => $e->getCode(),
-          '@msg' => $e->getMessage()), WATCHDOG_ERROR);
+        '@pid' => $object->id,
+        '@code' => $e->getCode(),
+        '@msg' => $e->getMessage()), WATCHDOG_ERROR);
       throw $e;
     }
   }
+
 }
 
-class IslandoraRepositoryQuery extends RepositoryQuery {}
+class IslandoraRepositoryQuery extends RepositoryQuery {
+  
+}
 
 class IslandoraNewFedoraObject extends NewFedoraObject {
+
   protected $newFedoraDatastreamClass = 'IslandoraNewFedoraDatastream';
   protected $fedoraDatastreamClass = 'IslandoraFedoraDatastream';
   protected $fedoraRelsExtClass = 'IslandoraFedoraRelsExt';
+
 }
 
 class IslandoraFedoraObject extends FedoraObject {
+
   protected $newFedoraDatastreamClass = 'IslandoraNewFedoraDatastream';
   protected $fedoraDatastreamClass = 'IslandoraFedoraDatastream';
   protected $fedoraRelsExtClass = 'IslandoraFedoraRelsExt';
@@ -144,19 +150,21 @@ class IslandoraFedoraObject extends FedoraObject {
       $ret = parent::ingestDatastream($datastream);
       islandora_invoke_datastream_hooks(ISLANDORA_DATASTREAM_INGESTED_HOOK, $object->models, $datastream->id, $object, $datastream);
       return $ret;
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
       watchdog('islandora', 'Failed to ingest object: @pid</br>code: @code<br/>message: @msg', array(
-          '@pid' => $object->id,
-          '@dsid' => $datastream->id,
-          '@code' => $e->getCode(),
-          '@msg' => $e->getMessage()), WATCHDOG_ERROR);
+        '@pid' => $object->id,
+        '@dsid' => $datastream->id,
+        '@code' => $e->getCode(),
+        '@msg' => $e->getMessage()), WATCHDOG_ERROR);
       throw $e;
     }
   }
+
 }
 
-class IslandoraRepositoryConnection extends RepositoryConnection {}
+class IslandoraRepositoryConnection extends RepositoryConnection {
+  
+}
 
 class IslandoraFedoraApi extends FedoraApi {
 
@@ -173,6 +181,7 @@ class IslandoraFedoraApi extends FedoraApi {
     $this->m = new IslandoraFedoraApiM($connection, $serializer);
     $this->connection = $connection;
   }
+
 }
 
 class IslandoraFedoraApiM extends FedoraApiM {
@@ -206,13 +215,12 @@ class IslandoraFedoraApiM extends FedoraApiM {
         islandora_invoke_datastream_hooks(ISLANDORA_DATASTREAM_PURGED_HOOK, $object->models, $dsid, $object, $dsid);
       }
       return $ret;
-    }
-    catch(Exception $e) {
+    } catch (Exception $e) {
       watchdog('islandora', 'Failed to modify datastream @dsid from @pid</br>code: @code<br/>message: @msg', array(
-          '@pid' => $pid,
-          '@dsid' => $dsid,
-          '@code' => $e->getCode(),
-          '@msg' => $e->getMessage()), WATCHDOG_ERROR);
+        '@pid' => $pid,
+        '@dsid' => $dsid,
+        '@code' => $e->getCode(),
+        '@msg' => $e->getMessage()), WATCHDOG_ERROR);
       throw $e;
     }
   }
@@ -240,12 +248,11 @@ class IslandoraFedoraApiM extends FedoraApiM {
         islandora_invoke_object_hooks(ISLANDORA_OBJECT_PURGED_HOOK, $object->models, $object->id);
       }
       return $ret;
-    }
-    catch(Exception $e) {
+    } catch (Exception $e) {
       watchdog('islandora', 'Failed to modify object: @pid</br>code: @code<br/>message: @msg', array(
-          '@pid' => $pid,
-          '@code' => $e->getCode(),
-          '@msg' => $e->getMessage()), WATCHDOG_ERROR);
+        '@pid' => $pid,
+        '@code' => $e->getCode(),
+        '@msg' => $e->getMessage()), WATCHDOG_ERROR);
       throw $e;
     }
   }
@@ -271,7 +278,7 @@ class IslandoraFedoraApiM extends FedoraApiM {
       switch ($action) {
         case 'block':
           throw new Exception('Purge Datastream was blocked.');
-        break;
+          break;
 
         case 'delete':
           $object[$dsid]->state = 'D';
@@ -282,13 +289,12 @@ class IslandoraFedoraApiM extends FedoraApiM {
           islandora_invoke_datastream_hooks(ISLANDORA_DATASTREAM_PURGED_HOOK, $object->models, $dsid, $object, $dsid);
           return $ret;
       }
-    }
-    catch(Exception $e) {
+    } catch (Exception $e) {
       watchdog('islandora', 'Failed to purge datastream @dsid from @pid</br>code: @code<br/>message: @msg', array(
-          '@pid' => $pid,
-          '@dsid' => $dsid,
-          '@code' => $e->getCode(),
-          '@msg' => $e->getMessage()), WATCHDOG_ERROR);
+        '@pid' => $pid,
+        '@dsid' => $dsid,
+        '@code' => $e->getCode(),
+        '@msg' => $e->getMessage()), WATCHDOG_ERROR);
       throw $e;
     }
   }
@@ -315,7 +321,7 @@ class IslandoraFedoraApiM extends FedoraApiM {
       switch ($action) {
         case 'block':
           throw new Exception('Purge object was blocked.');
-        break;
+          break;
 
         case 'delete':
           $object->state = 'D';
@@ -326,35 +332,46 @@ class IslandoraFedoraApiM extends FedoraApiM {
           islandora_invoke_object_hooks(ISLANDORA_OBJECT_PURGED_HOOK, $models, $pid);
           return $ret;
       }
-    }
-    catch(Exception $e) {
+    } catch (Exception $e) {
       watchdog('islandora', 'Failed to purge object @pid</br>code: @code<br/>message: @msg', array(
-          '@pid' => $pid,
-          '@code' => $e->getCode(),
-          '@msg' => $e->getMessage()), WATCHDOG_ERROR);
+        '@pid' => $pid,
+        '@code' => $e->getCode(),
+        '@msg' => $e->getMessage()), WATCHDOG_ERROR);
       throw $e;
     }
   }
 
 }
 
-class IslandoraSimpleCache extends SimpleCache {}
+class IslandoraSimpleCache extends SimpleCache {
+  
+}
 
 class IslandoraNewFedoraDatastream extends NewFedoraDatastream {
+
   protected $fedoraRelsIntClass = 'IslandoraFedoraRelsInt';
   protected $fedoraDatastreamVersionClass = 'IslandoraFedoraDatastreamVersion';
+
 }
 
 class IslandoraFedoraDatastream extends FedoraDatastream {
+
   protected $fedoraRelsIntClass = 'IslandoraFedoraRelsInt';
   protected $fedoraDatastreamVersionClass = 'IslandoraFedoraDatastreamVersion';
+
 }
 
 class IslandoraFedoraDatastreamVersion extends FedoraDatastreamVersion {
+
   protected $fedoraRelsIntClass = 'IslandoraFedoraRelsInt';
   protected $fedoraDatastreamVersionClass = 'IslandoraFedoraDatastreamVersion';
+
 }
 
-class IslandoraFedoraRelsExt extends FedoraRelsExt {}
+class IslandoraFedoraRelsExt extends FedoraRelsExt {
+  
+}
 
-class IslandoraFedoraRelsInt extends FedoraRelsInt {}
+class IslandoraFedoraRelsInt extends FedoraRelsInt {
+  
+}
