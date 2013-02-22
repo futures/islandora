@@ -35,19 +35,11 @@ function islandora_repository_admin(array $form, array &$form_state) {
 
   try {
     $info = $connection->api->a->describeRepository();
-  }
-  catch (RepositoryException $e) {
+  } catch (RepositoryException $e) {
     $info = FALSE;
   }
 
-  if ($info) {
-    try {
-      $dc = $connection->api->m->getDatastream('fedora-system:ContentModel-3.0', 'DC');
-    }
-    catch (RepositoryException $e) {
-      $dc = FALSE;
-    }
-  }
+
 
    if ($info) {
     $confirmation_message = '<img src="' . url('misc/watchdog-ok.png') . '"/>'
@@ -127,6 +119,13 @@ function islandora_repository_admin(array $form, array &$form_state) {
     ),
   );
 
+  $ns_json = $connection->api->m->getRegisteredNamespaces();
+  $namespaces = parseNamespace($ns_json);
+  $form['islandora_tabs']['islandora_namespace']['nslist'] = array(
+    '#title' => 'Registered Namespaces',
+    '#markup' => $namespaces,
+  );
+
   if (isset($form_state['values']['islandora_namespace_restriction_enforced'])) {
     $namespaces = $form_state['values']['islandora_namespace_restriction_enforced'];
   }
@@ -175,4 +174,21 @@ function islandora_update_url_div(array $form, array $form_state) {
  */
 function islandora_update_namespace_div(array $form, array $form_state) {
   return $form['islandora_tabs']['islandora_namespace']['wrapper'];
+}
+
+/**
+ * Format the namespace list given into displayable text.  Currently we just
+ * wrap the keys/values into a table and return the markup.
+ */
+function parseNamespace($ns_json) {
+  $nsmap = json_decode($ns_json)->namespaceRegistry->namespace;
+  $map = "<table>";
+  $key = "@prefix";
+  $value = "@URI";
+  foreach ($nsmap as $kv) {
+    if ($kv->$key !== "") {
+    $map = $map . "<tr><td>" . $kv->$key . "</td><td>" . $kv->$value . "</td></tr>";
+    }
+  }
+  return $map . "</table>";
 }

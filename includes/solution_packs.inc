@@ -186,7 +186,6 @@ function islandora_solution_pack_form_submit(array $form, array &$form_state) {
  *   The context of this batch operation.
  */
 function islandora_solution_pack_batch_operation_reingest_object(NewFedoraObject $object, array &$context) {
-  $deleted = FALSE;
   $existing_object = islandora_object_load($object->id);
   if ($existing_object) {
     $deleted = islandora_delete_object($existing_object);
