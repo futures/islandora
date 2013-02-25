@@ -110,7 +110,12 @@ function islandora_preprocess_islandora_default(&$variables) {
   try {
     $dc = $islandora_object['DC']->content;
     $dc_object = DublinCore::importFromXMLString($dc);
-    $dc_array = $dc_object->asArray();
+    //pp changed for fcrep4
+    if(isset($dc_object)){
+      $dc_array = $dc_object->asArray();
+    } else {
+      return array();
+    }
   }
   catch (Exception $e) {
     drupal_set_message(t('Error retrieving object %s %t', array('%s' => $islandora_object->id, '%t' => $e->getMessage())), 'error', FALSE);
