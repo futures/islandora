@@ -151,7 +151,8 @@ class DublinCore {
    */
   public static function importFromXMLString($dc_xml) {
     $dc_doc = new DomDocument();
-    if ($dc_doc->loadXML($dc_xml)) {
+    // jm: filter out cases where incoming dc is empty - for fedora4, f3 should not have this problem
+    if (!empty($dc_xml) && $dc_doc->loadXML($dc_xml)) {
       $oai_dc = $dc_doc->getElementsByTagNameNS('http://purl.org/dc/elements/1.1/', '*');
       $new_dc = new DublinCore();
       foreach ($oai_dc as $child) {
