@@ -125,7 +125,7 @@ function islandora_events_feed() {
   } catch (RepositoryException $e){
     return 'Empty Event Feed';
   }
-  return 'this is a test';//$feed;
+  print $feed;
   exit();
 }
 
