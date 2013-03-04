@@ -125,6 +125,7 @@ function islandora_events_feed() {
   } catch (RepositoryException $e){
     return 'Empty Event Feed';
   }
+  header('Content-Type: application/rss+xml');
   print $feed;
   exit();
 }
