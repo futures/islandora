@@ -38,10 +38,10 @@ function islandora_repository_admin(array $form, array &$form_state) {
   } catch (RepositoryException $e) {
     $info = FALSE;
   }
+  global $base_url;
+  $events_feed = '<a href="'.$base_url.'/islandora/events">Events Feed</a>';
 
-
-
-   if ($info) {
+  if ($info) {
     $confirmation_message = '<img src="' . url('misc/watchdog-ok.png') . '"/>'
         . t('Successfully connected to Fedora Server (Version !version) with a total of !objects objects and a total size of !size_of', array('!version' => $info['repositoryVersion']
           , '!objects' => $info['numberOfObjects'], '!size_of' => format_size($info['repositorySize'])));
@@ -50,14 +50,14 @@ function islandora_repository_admin(array $form, array &$form_state) {
     try {
       $response = $connection->api->m->registerNamespace("islandora", "http://islandora.ca");
       if ($response && $response['status'] == 201) {
-        $msg = '<img src="' . url('misc/watchdog-ok.png') . '"/>'. t("Successfully registered default islandora namespace");
+        $msg = '<img src="' . url('misc/watchdog-ok.png') . '"/>' . t("Successfully registered default islandora namespace");
+        $msg = $msg . '<br /><br />' . $events_feed;
       }
       else {
-        $msg = t("Encountered error @error ocurred during default namespace registration", array("@error" => 
-        $response['status']));
+        $msg = t("Encountered error @error ocurred during default namespace registration", array("@error" =>
+          $response['status']));
       }
-    }
-    catch (RepositoryException $e) {
+    } catch (RepositoryException $e) {
       $msg = t("Failed to register default islandora namespace");
     }
     $confirmation_message .= "<br />" . $msg;
@@ -67,7 +67,7 @@ function islandora_repository_admin(array $form, array &$form_state) {
     $confirmation_message .= t('Unable to connect to Fedora server at !islandora_url', array(
       '!islandora_url' => $url));
   }
-  
+
   $form['islandora_tabs'] = array(
     '#type' => 'vertical_tabs',
   );
@@ -209,7 +209,7 @@ function parseNamespace($ns_json) {
   $value = "@URI";
   foreach ($nsmap as $kv) {
     if ($kv->$key !== "") {
-    $map = $map . "<tr><td>" . $kv->$key . "</td><td>" . $kv->$value . "</td></tr>";
+      $map = $map . "<tr><td>" . $kv->$key . "</td><td>" . $kv->$value . "</td></tr>";
     }
   }
   return $map . "</table>";
