@@ -98,8 +98,11 @@ function islandora_preprocess_islandora_default(&$variables) {
       $datastreams[$id]['label_link'] = l($label, $download_path);
       $datastreams[$id]['download_url'] = $download_path;
       $datastreams[$id]['mimetype'] = $ds->mimetype;
-      $datastreams[$id]['size'] = islandora_datastream_get_human_readable_size($ds);
-      $datastreams[$id]['created_date'] = $ds->createdDate->format("Y-m-d");
+      $datastreams[$id]['size'] = islandora_datastream_get_human_readable_size($ds);    
+      //pp changed for FCREPO4
+      if(!isset($ds->createdDate)){
+        $datastreams[$id]['created_date'] = $ds->createdDate->format("Y-m-d");
+      }
       $datastreams[$id]['class'] = drupal_strtolower(preg_replace('/[^A-Za-z0-9]/', '-', $id));
     }
     catch (RepositoryException $e) {

@@ -235,6 +235,13 @@ function islandora_menu() {
     'type' => MENU_SUGGESTED_ITEM,
     'access arguments' => array(FEDORA_INGEST),
   );
+  $items['islandora/events'] = array(
+    'title' => 'Events Feed',
+    'file' => 'includes/utilities.inc',
+    'page callback' => 'islandora_events_feed',
+    'type' => MENU_CALLBACK,
+    'access arguments' => array('administer site configuration'),
+  );
   return $items;
 }
 
@@ -246,6 +253,7 @@ function islandora_admin_paths() {
   $paths['islandora/object/*/manage*'] = TRUE;
   $paths['islandora/object/*/delete'] = TRUE;
   $paths['islandora/object/*/datastream/*/edit'] = TRUE;
+  $paths['islandora/events'] = TRUE;
   return $paths;
 }
 
