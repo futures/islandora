@@ -60,6 +60,11 @@ function islandora_view_datastream(FedoraDatastream $datastream, $download = FAL
  */
 function islandora_datastream_get_human_readable_size(FedoraDatastream $datastream) {
   module_load_include('inc', 'islandora', 'includes/utilities');
+  //pp changed for fcrepo4
+  $repositoryVersion = $datastream->repository->api->a->getRepositoryVersion();
+  if ($repositoryVersion >= 4.0) {
+    return islandora_convert_bytes_to_human_readable($datastream->size);
+  }
   $size_is_calculatable = $datastream->controlGroup == 'M' || $datastream->controlGroup == 'X';
   return $size_is_calculatable ? islandora_convert_bytes_to_human_readable($datastream->size) : '-';
 }

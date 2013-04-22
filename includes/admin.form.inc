@@ -35,16 +35,19 @@ function islandora_repository_admin(array $form, array &$form_state) {
 
   try {
     $info = $connection->api->a->describeRepository();
-  } catch (RepositoryException $e) {
+  } catch (Exception $e) {
     $info = FALSE;
   }
   global $base_url;
-  $events_feed = '<a href="'.$base_url.'/islandora/events">Events Feed</a>';
+  $events_feed = '<a href="' . $base_url . '/islandora/events">Events Feed</a>';
 
-  if ($info) {
+  if (isset($info) && !empty($info)) {
+    $number_of_objects = (!isset($info['numberOfObjects'])) ? 'unknown' : $info['numberOfObjects'];
+    $repository_version = (!isset($info['repositoryVersion'])) ? 'unknown' : $info['repositoryVersion'];
+    $repository_size = (!isset($info['repositorySize'])) ? 'unknown' : $info['repositorySize'];
     $confirmation_message = '<img src="' . url('misc/watchdog-ok.png') . '"/>'
-        . t('Successfully connected to Fedora Server (Version !version) with a total of !objects objects and a total size of !size_of', array('!version' => $info['repositoryVersion']
-          , '!objects' => $info['numberOfObjects'], '!size_of' => format_size($info['repositorySize'])));
+        . t('Successfully connected to Fedora Server (Version !version) with a total of !objects objects and a total size of !size_of', array('!version' => $repository_version
+          , '!objects' => $number_of_objects, '!size_of' => format_size($repository_size)));
 
     // attempt to register the default namespace
     try {
@@ -91,14 +94,14 @@ function islandora_repository_admin(array $form, array &$form_state) {
     '#description' => t('The URL to use for REST connections <br /> !confirmation_message', array(
       '!confirmation_message' => $confirmation_message,
     )),
-    '#required' => TRUE,
-    '#ajax' => array(
-      'callback' => 'islandora_update_url_div',
-      'wrapper' => 'islandora-url',
-      'effect' => 'fade',
-      'event' => 'blur',
-      'progress' => array('type' => 'throbber'),
-    ),
+       '#required' => TRUE,
+        '#ajax' => array(
+        'callback' => 'islandora_update_url_div',
+        'wrapper' => 'islandora-url',
+        'effect' => 'fade',
+        'event' => 'blur',
+        'progress' => array('type' => 'throbber'),
+        ), 
   );
 
   $form['islandora_tabs']['islandora_general']['islandora_repository_pid'] = array(
@@ -134,29 +137,32 @@ function islandora_repository_admin(array $form, array &$form_state) {
       'progress' => array('type' => 'throbber'),
     ),
   );
+  if (isset($info) && !empty($info)) {
+    $ns_json = $connection->api->m->getRegisteredNamespaces();
+    $namespaces = parseNamespace($ns_json);
+    if (isset($namespaces)) {
+      $form['islandora_tabs']['islandora_namespace']['nslist'] = array(
+        '#title' => 'Registered Namespaces',
+        '#markup' => $namespaces,
+      );
 
-  $ns_json = $connection->api->m->getRegisteredNamespaces();
-  $namespaces = parseNamespace($ns_json);
-  $form['islandora_tabs']['islandora_namespace']['nslist'] = array(
-    '#title' => 'Registered Namespaces',
-    '#markup' => $namespaces,
-  );
+      if (isset($form_state['values']['islandora_namespace_restriction_enforced'])) {
+        $namespaces = $form_state['values']['islandora_namespace_restriction_enforced'];
+      }
+      else {
+        $namespaces = variable_get('islandora_namespace_restriction_enforced', FALSE);
+      }
 
-  if (isset($form_state['values']['islandora_namespace_restriction_enforced'])) {
-    $namespaces = $form_state['values']['islandora_namespace_restriction_enforced'];
-  }
-  else {
-    $namespaces = variable_get('islandora_namespace_restriction_enforced', FALSE);
-  }
-
-  if ($namespaces) {
-    $form['islandora_tabs']['islandora_namespace']['wrapper']['islandora_pids_allowed'] = array(
-      '#type' => 'textfield',
-      '#title' => t('PID namespaces allowed in this Drupal install'),
-      '#default_value' => variable_get('islandora_pids_allowed', 'default: demo: changeme: ilives: islandora-book: books: newspapers: '),
-      '#description' => t('A space separated list of PID namespaces that users are permitted to access from this Drupal installation. <br /> This could be more than a simple namespace ie demo:mydemos. <br /> islandora: is reserved and is always allowed.'),
-      '#weight' => 0,
-    );
+      if ($namespaces) {
+        $form['islandora_tabs']['islandora_namespace']['wrapper']['islandora_pids_allowed'] = array(
+          '#type' => 'textfield',
+          '#title' => t('PID namespaces allowed in this Drupal install'),
+          '#default_value' => variable_get('islandora_pids_allowed', 'default: demo: changeme: ilives: islandora-book: books: newspapers: '),
+          '#description' => t('A space separated list of PID namespaces that users are permitted to access from this Drupal installation. <br /> This could be more than a simple namespace ie demo:mydemos. <br /> islandora: is reserved and is always allowed.'),
+          '#weight' => 0,
+        );
+      }
+    }
   }
 
   return system_settings_form($form);
