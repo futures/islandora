@@ -98,8 +98,11 @@ function islandora_preprocess_islandora_default(&$variables) {
       $datastreams[$id]['label_link'] = l($label, $download_path);
       $datastreams[$id]['download_url'] = $download_path;
       $datastreams[$id]['mimetype'] = $ds->mimetype;
-      $datastreams[$id]['size'] = islandora_datastream_get_human_readable_size($ds);
-      $datastreams[$id]['created_date'] = $ds->createdDate->format("Y-m-d");
+      $datastreams[$id]['size'] = islandora_datastream_get_human_readable_size($ds);    
+      //pp changed for FCREPO4
+      if(!isset($ds->createdDate)){
+        $datastreams[$id]['created_date'] = $ds->createdDate->format("Y-m-d");
+      }
       $datastreams[$id]['class'] = drupal_strtolower(preg_replace('/[^A-Za-z0-9]/', '-', $id));
     }
     catch (RepositoryException $e) {
@@ -107,10 +110,22 @@ function islandora_preprocess_islandora_default(&$variables) {
     }
   }
   $variables['datastreams'] = $datastreams;
-  // Objects in fcrepo4 don't always contain a DC datastream.
-  if (isset($islandora_object['DC'])) {
-    $dc_object = DublinCore::importFromXMLString($islandora_object['DC']->content);
-    $dc_array = $dc_object->asArray();
+  try {
+    $datastream = $islandora_object['DC'];
+    if (!empty($datastream)) {
+      $dc = $datastream->content;
+      $dc_object = DublinCore::importFromXMLString($dc);
+
+      if (isset($dc_object)) {
+        $dc_array = $dc_object->asArray();
+      }
+      else {
+        $dc_array = array();
+      }
+    }
+  }
+  catch (Exception $e) { // this exception may not be thrown anymore
+    drupal_set_message(t('Error retrieving object %s %t', array('%s' => $islandora_object->id, '%t' => $e->getMessage())), 'error', FALSE);
   }
   $variables['dc_array'] = isset($dc_array) ? $dc_array : array();
   $variables['islandora_dublin_core'] = isset($dc_object) ? $dc_object : NULL;

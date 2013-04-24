@@ -35,36 +35,40 @@ function islandora_repository_admin(array $form, array &$form_state) {
 
   try {
     $info = $connection->api->a->describeRepository();
-  }
-  catch (RepositoryException $e) {
+  } catch (Exception $e) {
     $info = FALSE;
   }
+  global $base_url;
+  $events_feed = '<a href="' . $base_url . '/islandora/events">Events Feed</a>';
 
-  if ($info) {
+  if (isset($info) && !empty($info)) {
+    $number_of_objects = (!isset($info['numberOfObjects'])) ? 'unknown' : $info['numberOfObjects'];
+    $repository_version = (!isset($info['repositoryVersion'])) ? 'unknown' : $info['repositoryVersion'];
+    $repository_size = (!isset($info['repositorySize'])) ? 'unknown' : $info['repositorySize'];
+    $confirmation_message = '<img src="' . url('misc/watchdog-ok.png') . '"/>'
+        . t('Successfully connected to Fedora Server (Version !version) with a total of !objects objects and a total size of !size_of', array('!version' => $repository_version
+          , '!objects' => $number_of_objects, '!size_of' => format_size($repository_size)));
+
+    // attempt to register the default namespace
     try {
-      $dc = $connection->api->m->getDatastream('fedora-system:ContentModel-3.0', 'DC');
+      $response = $connection->api->m->registerNamespace("islandora", "http://islandora.ca");
+      if ($response && $response['status'] == 201) {
+        $msg = '<img src="' . url('misc/watchdog-ok.png') . '"/>' . t("Successfully registered default islandora namespace");
+        $msg = $msg . '<br /><br />' . $events_feed;
+      }
+      else {
+        $msg = t("Encountered error @error ocurred during default namespace registration", array("@error" =>
+          $response['status']));
+      }
+    } catch (RepositoryException $e) {
+      $msg = t("Failed to register default islandora namespace");
     }
-    catch (RepositoryException $e) {
-      $dc = FALSE;
-    }
-  }
-
-  if ($info) {
-    if ($dc) {
-      $confirmation_message = theme_image(array('path' => 'misc/watchdog-ok.png', 'attributes' => array()));
-      $confirmation_message .= t('Successfully connected to Fedora Server (Version !version).', array(
-                                 '!version' => $info['repositoryVersion']));
-    }
-    else {
-      $confirmation_message = theme_image(array('path' => 'misc/watchdog-warning.png', 'attributes' => array()));
-      $confirmation_message .= t('Unable to authenticate when connecting to to Fedora Server (Version !version). Please configure the !filter.',
-                               array('!version' => $info['repositoryVersion'], '!filter' => 'Drupal Filter'));
-    }
+    $confirmation_message .= "<br />" . $msg;
   }
   else {
     $confirmation_message = theme_image(array('path' => 'misc/watchdog-error.png', 'attributes' => array()));
     $confirmation_message .= t('Unable to connect to Fedora server at !islandora_url', array(
-                               '!islandora_url' => $url));
+      '!islandora_url' => $url));
   }
 
   $form['islandora_tabs'] = array(
@@ -133,53 +137,90 @@ function islandora_repository_admin(array $form, array &$form_state) {
       'progress' => array('type' => 'throbber'),
     ),
   );
+  if (isset($info) && !empty($info)) {
+    try{
+      $ns_json = $connection->api->m->getRegisteredNamespaces();
+      $namespaces = parseNamespace($ns_json);
+     } catch (Exception $e){
+      drupal_set_message("error retrieving namespaces");
+      $namespaces == NULL;
+    }
+    if (isset($namespaces)) {
+      $form['islandora_tabs']['islandora_namespace']['nslist'] = array(
+        '#title' => 'Registered Namespaces',
+        '#markup' => $namespaces,
+      );
 
-  if (isset($form_state['values']['islandora_namespace_restriction_enforced'])) {
-    $namespaces = $form_state['values']['islandora_namespace_restriction_enforced'];
+      if (isset($form_state['values']['islandora_namespace_restriction_enforced'])) {
+        $namespaces = $form_state['values']['islandora_namespace_restriction_enforced'];
+      }
+      else {
+        $namespaces = variable_get('islandora_namespace_restriction_enforced', FALSE);
+      }
+
+      if ($namespaces) {
+        $form['islandora_tabs']['islandora_namespace']['wrapper']['islandora_pids_allowed'] = array(
+          '#type' => 'textfield',
+          '#title' => t('PID namespaces allowed in this Drupal install'),
+          '#default_value' => variable_get('islandora_pids_allowed', 'default: demo: changeme: ilives: islandora-book: books: newspapers: '),
+          '#description' => t('A space separated list of PID namespaces that users are permitted to access from this Drupal installation. <br /> This could be more than a simple namespace ie demo:mydemos. <br /> islandora: is reserved and is always allowed.'),
+          '#weight' => 0,
+        );
+      }
+    }
   }
-  else {
-    $namespaces = variable_get('islandora_namespace_restriction_enforced', FALSE);
+    return system_settings_form($form);
   }
 
-  if ($namespaces) {
-    $form['islandora_tabs']['islandora_namespace']['wrapper']['islandora_pids_allowed'] = array(
-      '#type' => 'textfield',
-      '#title' => t('PID namespaces allowed in this Drupal install'),
-      '#default_value' => variable_get('islandora_pids_allowed', 'default: demo: changeme: ilives: islandora-book: books: newspapers: '),
-      '#description' => t('A list of PID namespaces, separated by spaces, that users are permitted to access from this Drupal installation. <br /> This could be more than a simple namespace, e.g. <b>demo:mydemos</b>. <br /> The namespace <b>islandora:</b> is reserved, and is always allowed.'),
-      '#weight' => 0,
-    );
+  /**
+   * Get the element to render for the AJAX event that triggered this callback.
+   *
+   * @param array $form
+   *   The Drupal form definition.
+   * @param array $form_state
+   *   The Drupal form state.
+   *
+   * @return array
+   *   The form element to render.
+   */
+  function islandora_update_url_div(array $form, array $form_state) {
+    return $form['islandora_tabs']['islandora_general']['wrapper'];
   }
 
-  return system_settings_form($form);
-}
+  /**
+   * Get the element to render for the AJAX event that triggered this callback.
+   *
+   * @param array $form
+   *   The Drupal form definition.
+   * @param array $form_state
+   *   The Drupal form state.
+   *
+   * @return array
+   *   The form element to render.
+   */
+  function islandora_update_namespace_div(array $form, array $form_state) {
+    return $form['islandora_tabs']['islandora_namespace']['wrapper'];
+  }
 
-/**
- * Get the element to render for the AJAX event that triggered this callback.
- *
- * @param array $form
- *   The Drupal form definition.
- * @param array $form_state
- *   The Drupal form state.
- *
- * @return array
- *   The form element to render.
- */
-function islandora_update_url_div(array $form, array $form_state) {
-  return $form['islandora_tabs']['islandora_general']['wrapper'];
-}
-
-/**
- * Get the element to render for the AJAX event that triggered this callback.
- *
- * @param array $form
- *   The Drupal form definition.
- * @param array $form_state
- *   The Drupal form state.
- *
- * @return array
- *   The form element to render.
- */
-function islandora_update_namespace_div(array $form, array $form_state) {
-  return $form['islandora_tabs']['islandora_namespace']['wrapper'];
-}
+  /**
+   * Format the namespace list given into displayable text.  Currently we just
+   * wrap the keys/values into a table and return the markup.
+   */
+  function parseNamespace($ns_json) {
+    $nsmap = json_decode($ns_json);
+    if ($nsmap !== NULL) {
+      $nsmap = $nsmap->namespaceRegistry->namespace;
+    }
+    else {
+      return "Error parsing namespace list";
+    }
+    $map = "<table>";
+    $key = "@prefix";
+    $value = "@URI";
+    foreach ($nsmap as $kv) {
+      if ($kv->$key !== "") {
+        $map = $map . "<tr><td>" . $kv->$key . "</td><td>" . $kv->$value . "</td></tr>";
+      }
+    }
+    return $map . "</table>";
+  }

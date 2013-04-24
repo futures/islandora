@@ -124,12 +124,23 @@ function islandora_describe_repository($url = NULL) {
     try {
       $info = $connection->api->a->describeRepository();
       return $info;
-    }
-    catch (RepositoryException $e) {
+    } catch (RepositoryException $e) {
       return FALSE;
     }
   }
   return FALSE;
+}
+
+function islandora_events_feed() {
+  $connection = islandora_get_tuque_connection();
+  try {
+    $feed = $connection->api->a->getEventsFeed();
+  } catch (RepositoryException $e){
+    return 'Empty Event Feed';
+  }
+  header('Content-Type: application/rss+xml');
+  print $feed;
+  exit();
 }
 
 /**
@@ -204,6 +215,7 @@ function islandora_escape_pid_for_function($pid) {
   // Apparently, case doesn't matter for function calls in PHP, so let's not
   // really worry about changing the case.
   return str_replace(
+      
   // Any PID characters which are not valid in the name of a PHP function.
       array(
         ':',
@@ -211,6 +223,7 @@ function islandora_escape_pid_for_function($pid) {
       ),
       '_',
       $pid
+
   );
 }
 
@@ -281,16 +294,14 @@ function islandora_namespace_accessible($id) {
 function islandora_get_parents_from_rels_ext(FedoraObject $object) {
   try {
     $collections = array_merge(
-      $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOfCollection'),
-      $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf'));
-  }
-  catch (RepositoryException $e) {
+        $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOfCollection'), $object->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf'));
+  } catch (RepositoryException $e) {
     // @todo some logging would be nice, not sure what this throws.
     return array();
   }
   $map = function($o) {
-    return islandora_object_load($o['object']['value']);
-  };
+        return islandora_object_load($o['object']['value']);
+      };
   $collections = array_map($map, $collections);
   return array_filter($collections);
 }
@@ -524,6 +535,7 @@ function islandora_prepare_new_object($namespace = NULL, $label = NULL, $datastr
 function islandora_display_repository_inaccessible_message() {
   $text = t('Islandora configuration');
   $link = l($text, 'admin/islandora/configure', array('attributes' => array('title' => $text)));
+
   $message = t('Could not connect to the repository. Please check the settings on the !link page.',
   array('!link' => $link));
   drupal_set_message(check_plain($message), 'error', FALSE);

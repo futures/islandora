@@ -190,6 +190,9 @@ function islandora_solution_pack_batch_operation_reingest_object(NewFedoraObject
   $deleted = FALSE;
   if ($existing_object) {
     $deleted = islandora_delete_object($existing_object);
+    //pp changed this
+    //below statement always seemed to return FALSE even on success.
+    //$purged = $deleted && $existing_object == NULL;
     if (!$deleted) {
       $object_link = l($existing_object->label, "islandora/object/{$existing_object->id}");
       drupal_set_message(filter_xss(t('Failed to purge existing object !object_link.', array(
