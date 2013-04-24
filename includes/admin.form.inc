@@ -94,14 +94,14 @@ function islandora_repository_admin(array $form, array &$form_state) {
     '#description' => t('The URL to use for REST connections <br /> !confirmation_message', array(
       '!confirmation_message' => $confirmation_message,
     )),
-       '#required' => TRUE,
-        '#ajax' => array(
-        'callback' => 'islandora_update_url_div',
-        'wrapper' => 'islandora-url',
-        'effect' => 'fade',
-        'event' => 'blur',
-        'progress' => array('type' => 'throbber'),
-        ), 
+    '#required' => TRUE,
+    '#ajax' => array(
+      'callback' => 'islandora_update_url_div',
+      'wrapper' => 'islandora-url',
+      'effect' => 'fade',
+      'event' => 'blur',
+      'progress' => array('type' => 'throbber'),
+    ),
   );
 
   $form['islandora_tabs']['islandora_general']['islandora_repository_pid'] = array(
@@ -138,8 +138,13 @@ function islandora_repository_admin(array $form, array &$form_state) {
     ),
   );
   if (isset($info) && !empty($info)) {
-    $ns_json = $connection->api->m->getRegisteredNamespaces();
-    $namespaces = parseNamespace($ns_json);
+    try{
+      $ns_json = $connection->api->m->getRegisteredNamespaces();
+      $namespaces = parseNamespace($ns_json);
+     } catch (Exception $e){
+      drupal_set_message("error retrieving namespaces");
+      $namespaces == NULL;
+    }
     if (isset($namespaces)) {
       $form['islandora_tabs']['islandora_namespace']['nslist'] = array(
         '#title' => 'Registered Namespaces',
@@ -165,58 +170,59 @@ function islandora_repository_admin(array $form, array &$form_state) {
     }
   }
 
-  return system_settings_form($form);
-}
 
-/**
- * Get the element to render for the AJAX event that triggered this callback.
- *
- * @param array $form
- *   The Drupal form definition.
- * @param array $form_state
- *   The Drupal form state.
- *
- * @return array
- *   The form element to render.
- */
-function islandora_update_url_div(array $form, array $form_state) {
-  return $form['islandora_tabs']['islandora_general']['wrapper'];
-}
-
-/**
- * Get the element to render for the AJAX event that triggered this callback.
- *
- * @param array $form
- *   The Drupal form definition.
- * @param array $form_state
- *   The Drupal form state.
- *
- * @return array
- *   The form element to render.
- */
-function islandora_update_namespace_div(array $form, array $form_state) {
-  return $form['islandora_tabs']['islandora_namespace']['wrapper'];
-}
-
-/**
- * Format the namespace list given into displayable text.  Currently we just
- * wrap the keys/values into a table and return the markup.
- */
-function parseNamespace($ns_json) {
-  $nsmap = json_decode($ns_json);
-  if ($nsmap !== NULL) {
-    $nsmap = $nsmap->namespaceRegistry->namespace;
+    return system_settings_form($form);
   }
-  else {
-    return "Error parsing namespace list";
+
+  /**
+   * Get the element to render for the AJAX event that triggered this callback.
+   *
+   * @param array $form
+   *   The Drupal form definition.
+   * @param array $form_state
+   *   The Drupal form state.
+   *
+   * @return array
+   *   The form element to render.
+   */
+  function islandora_update_url_div(array $form, array $form_state) {
+    return $form['islandora_tabs']['islandora_general']['wrapper'];
   }
-  $map = "<table>";
-  $key = "@prefix";
-  $value = "@URI";
-  foreach ($nsmap as $kv) {
-    if ($kv->$key !== "") {
-      $map = $map . "<tr><td>" . $kv->$key . "</td><td>" . $kv->$value . "</td></tr>";
+
+  /**
+   * Get the element to render for the AJAX event that triggered this callback.
+   *
+   * @param array $form
+   *   The Drupal form definition.
+   * @param array $form_state
+   *   The Drupal form state.
+   *
+   * @return array
+   *   The form element to render.
+   */
+  function islandora_update_namespace_div(array $form, array $form_state) {
+    return $form['islandora_tabs']['islandora_namespace']['wrapper'];
+  }
+
+  /**
+   * Format the namespace list given into displayable text.  Currently we just
+   * wrap the keys/values into a table and return the markup.
+   */
+  function parseNamespace($ns_json) {
+    $nsmap = json_decode($ns_json);
+    if ($nsmap !== NULL) {
+      $nsmap = $nsmap->namespaceRegistry->namespace;
     }
+    else {
+      return "Error parsing namespace list";
+    }
+    $map = "<table>";
+    $key = "@prefix";
+    $value = "@URI";
+    foreach ($nsmap as $kv) {
+      if ($kv->$key !== "") {
+        $map = $map . "<tr><td>" . $kv->$key . "</td><td>" . $kv->$value . "</td></tr>";
+      }
+    }
+    return $map . "</table>";
   }
-  return $map . "</table>";
-}
