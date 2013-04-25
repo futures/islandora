@@ -50,20 +50,22 @@ function islandora_repository_admin(array $form, array &$form_state) {
           , '!objects' => $number_of_objects, '!size_of' => format_size($repository_size)));
 
     // attempt to register the default namespace
-    try {
-      $response = $connection->api->m->registerNamespace("islandora", "http://islandora.ca");
-      if ($response && $response['status'] == 201) {
-        $msg = '<img src="' . url('misc/watchdog-ok.png') . '"/>' . t("Successfully registered default islandora namespace");
-        $msg = $msg . '<br /><br />' . $events_feed;
-      }
-      else {
-        $msg = t("Encountered error @error ocurred during default namespace registration", array("@error" =>
-          $response['status']));
-      }
+    if($repository_version >= 4.0) {
+      try {
+        $response = $connection->api->m->registerNamespace("islandora", "http://islandora.ca");
+        if ($response && $response['status'] == 201) {
+          $msg = '<img src="' . url('misc/watchdog-ok.png') . '"/>' . t("Successfully registered default islandora namespace");
+          $msg = $msg . '<br /><br />' . $events_feed;
+        }
+        else {
+          $msg = t("Encountered error @error ocurred during default namespace registration", array("@error" =>
+            $response['status']));
+        }
     } catch (RepositoryException $e) {
-      $msg = t("Failed to register default islandora namespace");
+        $msg = t("Failed to register default islandora namespace");
     }
-    $confirmation_message .= "<br />" . $msg;
+      $confirmation_message .= "<br />" . $msg;
+    }
   }
   else {
     $confirmation_message = theme_image(array('path' => 'misc/watchdog-error.png', 'attributes' => array()));
@@ -137,7 +139,7 @@ function islandora_repository_admin(array $form, array &$form_state) {
       'progress' => array('type' => 'throbber'),
     ),
   );
-  if (isset($info) && !empty($info)) {
+  if (isset($info) && !empty($info) && $repository_version >= 4.0) {
     try{
       $ns_json = $connection->api->m->getRegisteredNamespaces();
       $namespaces = parseNamespace($ns_json);
@@ -169,58 +171,58 @@ function islandora_repository_admin(array $form, array &$form_state) {
       }
     }
   }
-    return system_settings_form($form);
-  }
+  return system_settings_form($form);
+}
 
-  /**
-   * Get the element to render for the AJAX event that triggered this callback.
-   *
-   * @param array $form
-   *   The Drupal form definition.
-   * @param array $form_state
-   *   The Drupal form state.
-   *
-   * @return array
-   *   The form element to render.
-   */
-  function islandora_update_url_div(array $form, array $form_state) {
-    return $form['islandora_tabs']['islandora_general']['wrapper'];
-  }
+/**
+ * Get the element to render for the AJAX event that triggered this callback.
+ *
+ * @param array $form
+ *   The Drupal form definition.
+ * @param array $form_state
+ *   The Drupal form state.
+ *
+ * @return array
+ *   The form element to render.
+ */
+function islandora_update_url_div(array $form, array $form_state) {
+  return $form['islandora_tabs']['islandora_general']['wrapper'];
+}
 
-  /**
-   * Get the element to render for the AJAX event that triggered this callback.
-   *
-   * @param array $form
-   *   The Drupal form definition.
-   * @param array $form_state
-   *   The Drupal form state.
-   *
-   * @return array
-   *   The form element to render.
-   */
-  function islandora_update_namespace_div(array $form, array $form_state) {
-    return $form['islandora_tabs']['islandora_namespace']['wrapper'];
-  }
+/**
+ * Get the element to render for the AJAX event that triggered this callback.
+ *
+ * @param array $form
+ *   The Drupal form definition.
+ * @param array $form_state
+ *   The Drupal form state.
+ *
+ * @return array
+ *   The form element to render.
+ */
+function islandora_update_namespace_div(array $form, array $form_state) {
+  return $form['islandora_tabs']['islandora_namespace']['wrapper'];
+}
 
-  /**
-   * Format the namespace list given into displayable text.  Currently we just
-   * wrap the keys/values into a table and return the markup.
-   */
-  function parseNamespace($ns_json) {
-    $nsmap = json_decode($ns_json);
-    if ($nsmap !== NULL) {
-      $nsmap = $nsmap->namespaceRegistry->namespace;
-    }
-    else {
-      return "Error parsing namespace list";
-    }
-    $map = "<table>";
-    $key = "@prefix";
-    $value = "@URI";
-    foreach ($nsmap as $kv) {
-      if ($kv->$key !== "") {
-        $map = $map . "<tr><td>" . $kv->$key . "</td><td>" . $kv->$value . "</td></tr>";
-      }
-    }
-    return $map . "</table>";
+/**
+ * Format the namespace list given into displayable text.  Currently we just
+ * wrap the keys/values into a table and return the markup.
+ */
+function parseNamespace($ns_json) {
+  $nsmap = json_decode($ns_json);
+  if ($nsmap !== NULL) {
+    $nsmap = $nsmap->namespaceRegistry->namespace;
   }
+  else {
+    return "Error parsing namespace list";
+  }
+  $map = "<table>";
+  $key = "@prefix";
+  $value = "@URI";
+  foreach ($nsmap as $kv) {
+    if ($kv->$key !== "") {
+      $map = $map . "<tr><td>" . $kv->$key . "</td><td>" . $kv->$value . "</td></tr>";
+    }
+  }
+  return $map . "</table>";
+}
