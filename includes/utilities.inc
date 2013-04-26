@@ -759,7 +759,11 @@ function islandora_get_content_models($ignore_system_namespace = TRUE) {
             }
            }";
   $content_models = array();
+  try {
   $results = $tuque->repository->ri->sparqlQuery($query, 'unlimited');
+  } catch (Exception $e){
+    return $content_models;
+  }
   foreach ($results as $result) {
     $content_model = $result['object']['value'];
     $label = $result['label']['value'];
